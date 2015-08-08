@@ -55,7 +55,7 @@ unsigned int pinDurationRead = 0;
 float DELAYMIN = 200;
 float DELAYMAX = 5000;
 float DURATIONMIN = 1;
-float DURATIONMAX = 100;
+float DURATIONMAX = 300;
 //---------------------------------------------
 // 1 -Motor 1 Left
 // 2 -Motor 1 Stop
@@ -63,17 +63,16 @@ float DURATIONMAX = 100;
 
 // Motor 1
 
-int dir1PinA = 0;
-int dir2PinA = 1;
+int dir1PinA = 12;
+int dir2PinA = 13;
 int speedPinA = 11; // Needs to be a PWM pin to be able to control motor speed
 
 //  Motor 2
 
-int dir1PinB = 2;
-int dir2PinB = 3;
-int speedPinB = 12; // Needs to be a PWM pin to be able to control motor speed
+int dir1PinB = 100;
+int dir2PinB = 100;
+int speedPinB = 100; // Needs to be a PWM pin to be able to control motor speed
 
-/*
 
 class NKEventDump : public NKEventHandlers
 {
@@ -142,12 +141,6 @@ void CamStateHandlers::OnDeviceInitializedState(PTP *ptp)
 	ptp->SetDevicePropValue(0xD1B0, (uint8_t)1);
 	Nk.InitiateCapture();
         delay(1000);
-        lcd.begin(16, 2);
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Analog Read");
-        delay(1000);
-	
     }
 
     uint32_t time_now = millis();
@@ -160,26 +153,7 @@ void CamStateHandlers::OnDeviceInitializedState(PTP *ptp)
 	Nk.EventCheck(&prs);
     }
 }
-*/
 
-
-void setup() {
-    // initialize serial communication @ 9600 baud:
-    //Serial.begin(9600);
-
-    //Define L298N Dual H-Bridge Motor Controller Pins
-    pinMode(dir1PinA,OUTPUT);
-    pinMode(dir2PinA,OUTPUT);
-    pinMode(speedPinA,OUTPUT);
-
-
-    lcd.begin(16, 2);
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("TimelapseControl");
-    delay(1000);
-    keypad.setRate(10);
-}
 
 void controlMotor(int inByte) {
     switch (inByte) {
@@ -280,6 +254,26 @@ void changeStatus(int motor, bool enable) {
 	}
 	delay(1000);
 }
+
+void setup() {
+    // initialize serial communication @ 9600 baud:
+    //Serial.begin(9600);
+    Usb.Init();
+
+    //Define L298N Dual H-Bridge Motor Controller Pins
+    pinMode(dir1PinA,OUTPUT);
+    pinMode(dir2PinA,OUTPUT);
+    //pinMode(speedPinA,OUTPUT);
+
+
+    lcd.begin(16, 2);
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("TimelapseControl");
+    delay(1000);
+    keypad.setRate(10);
+}
+
 
 void loop() {
     pinDelayRead = analogRead(potPinDelay); 
@@ -386,14 +380,15 @@ void loop() {
     panDone = false;
 
     if(waitingSlide == true && currentMillis - prevSlideDelMillies > valSlideDelay && slideEnabled) {
+	Nk.InitiateCapture();
         if(forwardSlide == true)
             controlMotor('1');
         else
             controlMotor('3');
         prevSlideDurMillies = currentMillis;
         waitingSlide = false;
-		slideDone = true;
-		slideSteps++;
+	slideDone = true;
+	slideSteps++;
     }
 
     if(waitingSlide == false && currentMillis - prevSlideDurMillies > valSlideDuration && !slideDone) {
@@ -420,4 +415,5 @@ void loop() {
         waitingPan = true;
 	panDone = true;
     }
+    Usb.Task();
 }
