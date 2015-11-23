@@ -45,16 +45,8 @@ float DURATIONMAX = 300;
 
 // Motor 1
 
-int dir1PinA = 12;
-int dir2PinA = 13;
-int speedPinA = 11; // Needs to be a PWM pin to be able to control motor speed
-
-//  Motor 2
-
-int dir1PinB = 100;
-int dir2PinB = 100;
-int speedPinB = 100; // Needs to be a PWM pin to be able to control motor speed
-
+int dir1PinA = 2;
+int dir2PinA = 3;
 
 class NKEventDump : public NKEventHandlers
 {
@@ -122,7 +114,7 @@ void CamStateHandlers::OnDeviceInitializedState(PTP *ptp)
 	E_Notify(PSTR("Camera connected.\r\n"),0x80);
 	ptp->SetDevicePropValue(0xD1B0, (uint8_t)1);
 	Nk.InitiateCapture();
-        delay(1000);
+	delay(1000);
     }
 
     uint32_t time_now = millis();
@@ -140,84 +132,55 @@ void CamStateHandlers::OnDeviceInitializedState(PTP *ptp)
 void controlMotor(int inByte) {
     switch (inByte) {
 
-        //______________Motor 1______________
+	//______________Motor 1______________
 
-        case '1': // Motor 1 Forward
-            analogWrite(speedPinA, 255);//Sets 150 variable via PWM 
-            digitalWrite(dir1PinA, HIGH);
-            digitalWrite(dir2PinA, LOW);
-            Serial.println("Motor 1 Forward"); // Prints out “Motor 1 Forward” on the serial monitor
-            Serial.println("   "); // Creates a blank line printed on the serial monitor
-            break;
-
-        case '2': // Motor 1 Stop (Freespin)
-            analogWrite(speedPinA, 0);
-            digitalWrite(dir1PinA, LOW);
-            digitalWrite(dir2PinA, LOW);
-            Serial.println("Motor 1 Stop"); 
-			Serial.println("   ");
-            break;
-
-        case '3': // Motor 1 Reverse
-            analogWrite(speedPinA, 255);
-            digitalWrite(dir1PinA, LOW);
-            digitalWrite(dir2PinA, HIGH);
-            Serial.println("Motor 1 Reverse"); 
-	    Serial.println("   ");
-            break;
-
-	//______________Motor 2______________
-	
-	case '4': // Motor 2 Forward
-	    analogWrite(speedPinB, 255);
-	    digitalWrite(dir1PinB, HIGH);
-	    digitalWrite(dir2PinB, LOW);
-	    Serial.println("Motor 2 Forward");
+	case '1': // Motor 1 Forward
+	    digitalWrite(dir1PinA, HIGH);
+	    digitalWrite(dir2PinA, LOW);
+	    Serial.println("Motor 1 Forward");
 	    Serial.println("   ");
 	    break;
 
-	case '5': // Motor 1 Stop (Freespin)
-	    analogWrite(speedPinB, 0);
-	    digitalWrite(dir1PinB, LOW);
-	    digitalWrite(dir2PinB, LOW);
-	    Serial.println("Motor 2 Stop");
+	case '2': // Motor 1 Stop (Freespin)
+	    digitalWrite(dir1PinA, LOW);
+	    digitalWrite(dir2PinA, LOW);
+	    Serial.println("Motor 1 Stop"); 
 	    Serial.println("   ");
 	    break;
 
-	case '6': // Motor 2 Reverse
-	    analogWrite(speedPinB, 255);
-	    digitalWrite(dir1PinB, LOW);
-	    digitalWrite(dir2PinB, HIGH);
-	    Serial.println("Motor 2 Reverse");
+	case '3': // Motor 1 Reverse
+	    digitalWrite(dir1PinA, LOW);
+	    digitalWrite(dir2PinA, HIGH);
+	    Serial.println("Motor 1 Reverse"); 
 	    Serial.println("   ");
 	    break;
 
-        default:
-            // turn all the connections off if an unmapped key is pressed:
-            for (int thisPin = 2; thisPin < 11; thisPin++) {
-                digitalWrite(thisPin, LOW);
-            }
+	default:
+	    // turn all the connections off if an unmapped key is pressed:
+	    for (int thisPin = 2; thisPin < 11; thisPin++) {
+		digitalWrite(thisPin, LOW);
+	    }
     }
 }
 
 void changeStatus(int motor, bool enable) {
-	if(motor == 0 && enable) {
-		lcd.clear();
-		lcd.setCursor(2,0);
-		lcd.print("Slide Enabled");
-		slideSteps = 0;
-	}
-	if(motor == 0 && !enable) {
-		lcd.clear();
-		lcd.setCursor(2,0);
-		lcd.print("Slide Disabled");
-		lcd.setCursor(2,1);
-		lcd.print("Steps:");
-		lcd.setCursor(8,1);
-		lcd.print(slideSteps);
-		slideSteps = 0;
-	}
-	delay(1000);
+    if(enable) {
+	lcd.clear();
+	lcd.setCursor(2,0);
+	lcd.print("Slide Enabled");
+	slideSteps = 0;
+    }
+    if(!enable) {
+	lcd.clear();
+	lcd.setCursor(2,0);
+	lcd.print("Slide Disabled");
+	lcd.setCursor(2,1);
+	lcd.print("Steps:");
+	lcd.setCursor(8,1);
+	lcd.print(slideSteps);
+	slideSteps = 0;
+    }
+    //delay(1000);
 }
 
 // Threads Initialization
@@ -231,91 +194,121 @@ ThreadController controller = ThreadController();
 
 
 void startSlide() {
-	if(forwardSlide == true)
+    noInterrupts();	
+    Serial.println("startSlide_b: " + String(millis()));
+    if(forwardSlide == true)
 		controlMotor('1');
-	else
-		controlMotor('2');
-	slideSteps++;
-	slideStartThread.enabled = false;
-	slideStopThread.enabled = true;
-	cameraThread.enabled = true;
-	slideStopThread.setInterval(valSlideDuration);
+    else
+		controlMotor('3');
+    slideSteps++;
+
+    slideStopThread.setInterval(valSlideDuration);
+    cameraThread.setInterval(valSlideDelay - 100);
+
+    slideStartThread.enabled = false;
+    slideStopThread.enabled = true;
+    cameraThread.enabled = true;
+
+    Serial.println("SlideDur: " + String(valSlideDuration));
+    Serial.println("startSlide_e: " + String(millis()));
+
+    //interrupts();	
 }
 
 void stopSlide() {
-	controlMotor('2');
-	slideStartThread.enabled = true;
-	slideStartThread.setInterval(valSlideDelay);
-	cameraThread.setInterval(valSlideDelay - 100);
+    //noInterrupts();	
+    Serial.println("stopSlide_b: " + String(millis()));
+    controlMotor('2');
+
+    slideStartThread.setInterval(valSlideDelay);
+
+    slideStartThread.enabled = true;
+    slideStopThread.enabled = false;
+
+    Serial.println("stopSlide_e: " + String(millis()));
+    interrupts();	
 }
 
 void shutter() {
-	Nk.InitiateCapture();
+    Serial.println("shutter_b: " + String(millis()));
+    //Nk.InitiateCapture();
+    Serial.println("shutter_b: " + String(millis()));
 }
 
 void updateDisplay() {
-	lcd.clear();
-	lcd.setCursor(0, 0);
-	lcd.print("Slide");
-	lcd.setCursor(0, 1);
+    Serial.println("updateDisplay_b: " + String(millis()));
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Slide");
+    lcd.setCursor(0, 1);
 
-	if(forwardSlide == true)
-		lcd.print("->");
-	else
-		lcd.print("<-");
+    if(forwardSlide == true)
+	lcd.print("->");
+    else
+	lcd.print("<-");
 
-	lcd.setCursor(6, 0);
-	lcd.print(valNewSlideDuration);
-	lcd.setCursor(6, 1);
-	lcd.print(valSlideDuration);
-	lcd.setCursor(12, 0);
-	lcd.print(valNewSlideDelay);
-	lcd.setCursor(12, 1);
-	lcd.print(valSlideDelay);
+    lcd.setCursor(6, 0);
+    lcd.print(valNewSlideDuration);
+    lcd.setCursor(6, 1);
+    lcd.print(valSlideDuration);
+    lcd.setCursor(12, 0);
+    lcd.print(valNewSlideDelay);
+    lcd.setCursor(12, 1);
+    lcd.print(valSlideDelay);
+    Serial.println("updateDisplay_e: " + String(millis()));
 }
 
 void readPins() {
+    Serial.println("readPins_b: " + String(millis()));
     pinDelayRead = analogRead(potPinDelay); 
     pinDurationRead = analogRead(potPinDuration); 
 
-	valNewSlideDelay = pinDelayRead*((DELAYMAX-DELAYMIN)/1023)+DELAYMIN;
-	valNewSlideDuration = pinDurationRead*((DURATIONMAX-DURATIONMIN)/1023)+DURATIONMIN;
+    valNewSlideDelay = pinDelayRead*((DELAYMAX-DELAYMIN)/1023)+DELAYMIN;
+    valNewSlideDuration = pinDurationRead*((DURATIONMAX-DURATIONMIN)/1023)+DURATIONMIN;
+    Serial.println("readPins_e: " + String(millis()));
 }
 
 void userInput() {
+    Serial.println("userInput_b: " + String(millis()));
     localKey = keypad.getKey();
 
-	if(localKey != SAMPLE_WAIT) {
-		if(localKey == 1 && curKey != 1) {
-			//Change Direction
-			forwardSlide = !forwardSlide;
-			curKey = 1;
-		}
-		if(localKey == 5 && curKey != 5) {
-			//Commit Delay & Duration
-			valSlideDelay = valNewSlideDelay;
-			valSlideDuration = valNewSlideDuration;
-		}
-		if(localKey == 3 && curKey != 3) {
-			//Enable/Disable Slide
-			slideStartThread.enabled = !slideStartThread.enabled;
-			changeStatus(0, slideStartThread.enabled);
-		}
-		else
-			curKey = localKey;
+    if(localKey != SAMPLE_WAIT) {
+	if(localKey == 1 && curKey != 1) {
+	    //Change Direction
+	    forwardSlide = !forwardSlide;
+	    curKey = 1;
 	}
+	if(localKey == 5 && curKey != 5) {
+	    //Commit Delay & Duration
+	    valSlideDelay = valNewSlideDelay;
+	    valSlideDuration = valNewSlideDuration;
+	}
+	if(localKey == 3 && curKey != 3) {
+	    //Enable/Disable Slide
+	    slideStartThread.enabled = !slideStartThread.enabled;
+	    changeStatus(0, slideStartThread.enabled);
+	}
+	else
+	    curKey = localKey;
+    }
+    Serial.println("userInput_e: " + String(millis()));
 }
 
 
 void setup() {
-    //Serial.begin(9600);
+    Serial.begin(9600);
     Usb.Init();
 
     //Define L298N Dual H-Bridge Motor Controller Pins
     pinMode(dir1PinA,OUTPUT);
     pinMode(dir2PinA,OUTPUT);
+	/*
+	for (int thisPin = 2; thisPin < 11; thisPin++) {
+		digitalWrite(thisPin, LOW);
+	}
+	*/
 
-	controlMotor('2');
+    controlMotor('2');
 
     lcd.begin(16, 2);
     lcd.clear();
@@ -324,31 +317,30 @@ void setup() {
     delay(1000);
     keypad.setRate(10);
 
+    slideStartThread.enabled = false;
+    slideStopThread.enabled = false;
+    cameraThread.enabled = false;
 
-	slideStartThread.enabled = false;
-	slideStopThread.enabled = false;
-	cameraThread.enabled = false;
+    slideStartThread.onRun(startSlide);
+    slideStopThread.onRun(stopSlide);
+    cameraThread.onRun(shutter);
+    displayThread.onRun(updateDisplay);
+    pinReadThread.onRun(readPins);
+    userInputThread.onRun(userInput);
 
-	slideStartThread.onRun(startSlide);
-	slideStopThread.onRun(stopSlide);
-	cameraThread.onRun(shutter);
-	displayThread.onRun(updateDisplay);
-	pinReadThread.onRun(readPins);
-	userInputThread.onRun(userInput);
+    pinReadThread.setInterval(200);
+    displayThread.setInterval(200);
+    userInputThread.setInterval(300);
 
-	pinReadThread.setInterval(200);
-	displayThread.setInterval(200);
-	userInputThread.setInterval(300);
-
-	controller.add(&slideStartThread);
-	controller.add(&slideStopThread);
-	controller.add(&cameraThread);
-	controller.add(&displayThread);
-	controller.add(&pinReadThread);
-	controller.add(&userInputThread);
+    controller.add(&slideStartThread);
+    controller.add(&slideStopThread);
+    controller.add(&cameraThread);
+    controller.add(&displayThread);
+    controller.add(&pinReadThread);
+    controller.add(&userInputThread);
 }
 
 void loop() {
-	controller.run();
+    controller.run();
     Usb.Task();
 }

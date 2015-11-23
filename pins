@@ -1,0 +1,23 @@
+D
+13	SPI signals
+12	SPI signals
+11	SPI signals
+10	Backlight On/Off
+9	E
+8	RS
+7	LCD
+6	LCD
+5	LCD
+4	LCD
+3	MOTOR 1 p1	
+2	MOTOR 1 p2	
+1	SS
+0	INT
+
+A
+4
+3			
+2	Potentiometer Duration
+1	Potentiometer Delay
+0	Buttons
+
