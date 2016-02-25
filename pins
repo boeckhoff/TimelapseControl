@@ -9,10 +9,10 @@ D
 6	LCD
 5	LCD
 4	LCD
-3	MOTOR 1 p1	
-2	MOTOR 1 p2	
-1	SS
-0	INT
+3	SS	
+2	INT
+1	MOTOR 1 p1
+0	MOTOR 1 p2
 
 A
 4
@@ -20,4 +20,3 @@ A
 2	Potentiometer Duration
 1	Potentiometer Delay
 0	Buttons
-
