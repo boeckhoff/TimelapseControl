@@ -1,8 +1,6 @@
 # TimelapseControl
 Arduino camera control designed for timelapse-photography with usb-host-shield + lcd-keypad-shield + motor for sliding
 
-**Ive decided to split this project in two, one for [timelapse control with arduino](https://github.com/boeckhoff/ArduinoTimelapse) and one that deals only with the slider part, therefore this repository is discontinued.**
-
 
 
 
